@@ -1,0 +1,4 @@
+For this assignment I was to create a data structure in which objects occupied a position in a three dimensional 'Bounded Cube'. We were also tasked with writing jUnit tests, both white and black box, achieving complete code coverage, as well as assessing edge cases.
+
+A written report describing development choices was to be included at the bottom of our main file as comments. I have extracted that main section as a separate text file enclosed.
+I have included a copy of the relevant file in this directory, along with the task description, report, and complete assignment folder. 

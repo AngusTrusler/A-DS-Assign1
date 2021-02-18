@@ -1,0 +1,91 @@
+/*
+ * Analysis and Justification of Design Choices for BoundedCube
+ * 
+ * When designing the BoundedCube, consideration first had to be given to the
+ * large scale of the data it may have to store. The number of individual cubic
+ * kilometers (cells) of airspace the cube would have to store, using the given
+ * spec would be equal to: 5321 * 3428 * 35 which is 638,413,580 unique possible
+ * coordinates. To store each and every coordinate - even if each coordinate
+ * occupied minimal memory space - would require n^3 slots of memory where n is
+ * the average single dimension of the cube (as the array would be 3
+ * dimensional).
+ * 
+ * As the maximum number of aircraft within the OneSKy simulation is no more
+ * than 20,000, the number of occupied cells is proportionally tiny compared to
+ * the maximum size of the airspace.
+ * 
+ * Therefore, to be as memory efficient as possible, only coordinates that are
+ * in use should be tracked, and as soon as a coordinate is no longer in use, it
+ * should be removed from memory.
+ * 
+ * To this end, a linked-list of only the used coordinates seems like the ideal
+ * approach. The biggest problem with the linked-list approach is the large size
+ * the cube may end up becoming. As adding a new aircraft to the list requires
+ * checking if the cell is already occupied, the cube must first find the cell.
+ * To do this, it must iterate over all the existing cells until it either finds
+ * the cell, or doesn't find the cell. In either case, the access time is
+ * dramatically slower as the number of aircraft increases to a factor of O(n)
+ * where n is the number of aircraft stored in the cube which is equal to O(n^3)
+ * where n is the average cube dimension is the total number of cells in the
+ * airspace.
+ * 
+ * As this class is scaled up to include more aircraft, it becomes clear the
+ * method by which aircraft are retrieved from the cube would not be efficient.
+ * In order for an aircraft to be added to the structure, the cube must search
+ * through the list of tracked cells to determine if the cell is already being
+ * tracked (to check if an aircraft is about to fly into another's airspace). As
+ * an aircraft may be found in any cell position, the total search space, as
+ * detailed above, is O(n^3).
+ * 
+ * For each aircraft, the program must search this space, and iterating through
+ * the entire list of aircraft each time an aircraft is added means that to add
+ * a list of aircraft of size n, means that the total time taken to add the list
+ * of aircraft becomes O(n^2).
+ * 
+ * Therefore, in this current implementation to add a list of aircraft to a cube
+ * of dimension n, is O(n^2) * O(n^3). This run time efficiency is excessive.
+ * 
+ * To maintain the memory efficient qualities a linked-list provides, but cut
+ * down on the excessive access time, a different approach is needed. Instead of
+ * linking cells in a standard one dimensional strategy, utilizing the cell's 3
+ * different coordinate types to our advantage may yield faster run times.
+ * 
+ * An incomplete sorted ternary tree was implemented using a linked list and the
+ * cell's three coordinate types. Cells each had a parent, and three children -
+ * an x, y, and z child. A cell's child cells all have coordinates greater than
+ * the parent's coordinates. Eg coordinate x5y5z5 may have an x child x6y2z8, a
+ * y child x5y9z1, and a z child x5y5z6. (x children must have xP < xC - y
+ * children must have xP==xC, yP < yC - z children must have xP==xC, yP==yC, zP
+ * < zC)
+ * 
+ * A cell was found by starting at the root node, and traversing down the tree
+ * checking first, the input coordinates, against only the x children. If an x
+ * child with matching x value was found, continue traversing down the y
+ * children, comparing y coordinates. If a child was found with a coordinate
+ * value greater than the provided coordinate, it is clear the cell is not
+ * currently being tracked and therefore is not in the tree, and is then added
+ * between the lesser parent and the greater child. Links to nodes are updated.
+ * 
+ * As the structure is now sorted, this new structure reduces the search time
+ * (where n is the cube's average dimension) from O(n^3) to O(3n). This is
+ * because the worst case search time is: a cube that is full, finding the cell
+ * located at max length, breadth, and width from x0y0z0, requires iteratively
+ * adding +1 to x, then y, then z, until cell is reached - as opposed to
+ * searching each and every possible location.
+ * 
+ * An array based structure would have been inefficient compared to a linked
+ * list structure when one considers the same memory management problems
+ * presented in the TraversableQueue. While access time would have greatly
+ * exceeded the capabilities of the linked list, the use of memory would have
+ * been very inefficient. However, even allowing the limitations provided in the
+ * spec it may still have been *practical*. The implementation would still need
+ * to discard unoccupied cells, but by keeping the list sorted, memory usage
+ * would not have exceeded the spec's limitations, and access time would have
+ * been greatly increased.
+ * 
+ * In summary, this implementation of the BoundedCube:
+ * 
+ * - Memory usage: O(n)
+ * 
+ * - Access time: O(n)
+ */
